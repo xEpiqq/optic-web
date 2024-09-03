@@ -10,7 +10,7 @@
 	<header class="relative inset-x-0 top-0 z-50">
 	  <nav class="flex items-center justify-between p-6 lg:px-8" aria-label="Global">
 		<div class="flex lg:flex-1">
-		  <a href="#" class="-m-1.5 p-1.5">
+		  <a href="/" class="-m-1.5 p-1.5">
 			<span class="sr-only">Your Company</span>
 			<img class="h-8 w-auto" src="/logo.png" alt="Optic D2D Logo">
 		  </a>
@@ -23,9 +23,6 @@
 			</svg>
 		  </button>
 		</div>
-		<div class="hidden lg:flex lg:flex-1 lg:justify-end">
-		  <a href="/auth" class="text-sm font-semibold leading-6 text-zinc-300">Log in <span aria-hidden="true">&rarr;</span></a>
-		</div>
 	  </nav>
 	  <!-- Mobile menu, show/hide based on menu open state. -->
 	  {#if isMobileMenuOpen}
@@ -34,7 +31,7 @@
 		<div class="fixed inset-0 z-50"></div>
 		<div class="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-zinc-800 px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-zinc-900/10">
 		  <div class="flex items-center justify-between">
-			<a href="#" class="-m-1.5 p-1.5">
+			<a href="/" class="-m-1.5 p-1.5">
 			  <span class="sr-only">Your Company</span>
 			  <img class="h-8 w-auto" src="/logo.png" alt="Optic D2D Logo">
 			</a>
@@ -58,7 +55,7 @@
 	</header>
   
 	<!-- Page content below the header -->
-	<div class="flex-grow flex items-center bg-zinc-900 px-4 py-12 sm:px-6 lg:px-8 justify-center">
+	<div class="flex-grow flex items-center bg-zinc-900 px-4 py-12 sm:px-6 lg:px-8 justify-center -mt-52">
 	  <div class="w-full max-w-sm space-y-8">
 		<div class="text-center">
 		  <img class="mx-auto h-10 w-auto animate-pulse animate-[pulse_3s_ease-in-out_infinite]" src="/logo.png" alt="Optic D2D Logo">
@@ -89,4 +86,3 @@
 	  </div>
 	</div>
   </div>
-  

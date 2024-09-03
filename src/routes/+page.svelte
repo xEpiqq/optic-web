@@ -69,7 +69,7 @@
         <h1 class="text-4xl font-bold tracking-tight text-zinc-100 sm:text-6xl">Sell Fiber Faster</h1>
         <p class="mt-6 text-lg leading-8 text-zinc-300">Import leads, knock doors, sign up customers, increase your revenue.</p>
         <div class="mt-10 flex flex-col items-center justify-center">
-          <a href="/auth" class="rounded-md bg-indigo-600 px-8 py-3 text-base font-semibold text-zinc-100 shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400">Get started</a>
+          <a href="/auth" class="rounded-md bg-indigo-600 px-8 py-3 text-base font-semibold text-zinc-100 shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400">Get Started</a>
           <p class="mt-4 text-sm text-zinc-400 italic">Early Access Version</p>
         </div>
       </div>
