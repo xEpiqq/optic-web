@@ -1,11 +1,9 @@
 import { createBrowserClient, createServerClient, isBrowser } from '@supabase/ssr';
 import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { redirect } from '@sveltejs/kit';
 
 export const load = async ({ data, depends, fetch }) => {
-  /**
-   * Declare a dependency so the layout can be invalidated, for example, on
-   * session refresh.
-   */
+  // Declare a dependency to invalidate the layout on session refresh
   depends('supabase:auth');
 
   const supabase = isBrowser()
@@ -25,18 +23,32 @@ export const load = async ({ data, depends, fetch }) => {
         },
       });
 
-  /**
-   * It's fine to use `getSession` here, because on the client, `getSession` is
-   * safe, and on the server, it reads `session` from the `LayoutData`, which
-   * safely checked the session using `safeGetSession`.
-   */
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // Get the current session
+  const sessionResponse = await supabase.auth.getSession();
+  const session = sessionResponse?.data?.session;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Get the authenticated user
+  const userResponse = await supabase.auth.getUser();
+  const user = userResponse?.data?.user;
 
-  return { session, supabase, user };
+  // Fetch the user's profile from the 'profiles' table
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
+  // Handle any potential error in fetching the profile
+  if (profileError) {
+    console.error('Error fetching profile:', profileError);
+    throw redirect(303, '/auth'); // Redirect if there's an error fetching the profile
+  }
+
+  // Return session, supabase instance, user, and profile
+  return {
+    session,
+    supabase,
+    user,
+    userProfile: profile // Include the user profile here
+  };
 };
