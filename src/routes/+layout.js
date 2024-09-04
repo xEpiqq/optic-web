@@ -27,9 +27,27 @@ export const load = async ({ data, depends, fetch }) => {
   const sessionResponse = await supabase.auth.getSession();
   const session = sessionResponse?.data?.session;
 
+  // If there's no session, avoid redirect loop
+  if (!session) {
+    return {
+      session: null,
+      user: null,
+      userProfile: null
+    };
+  }
+
   // Get the authenticated user
   const userResponse = await supabase.auth.getUser();
   const user = userResponse?.data?.user;
+
+  // If the user is not found, ensure proper handling
+  if (!user) {
+    return {
+      session,
+      user: null,
+      userProfile: null
+    };
+  }
 
   // Fetch the user's profile from the 'profiles' table
   const { data: profile, error: profileError } = await supabase
@@ -41,7 +59,11 @@ export const load = async ({ data, depends, fetch }) => {
   // Handle any potential error in fetching the profile
   if (profileError) {
     console.error('Error fetching profile:', profileError);
-    throw redirect(303, '/auth'); // Redirect if there's an error fetching the profile
+    return {
+      session,
+      user,
+      userProfile: null
+    };
   }
 
   // Return session, supabase instance, user, and profile
