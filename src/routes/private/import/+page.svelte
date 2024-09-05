@@ -1,29 +1,27 @@
-
-
 <script>
   let file;
+  let isProcessing = false; // To track if the process is ongoing
+  let fileSelected = false;  // To track if a file has been selected
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const BATCH_SIZE = 50; // Limit to 50 requests per second
   const DELAY = 1000; // 1 second delay between each batch
   import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
+  import { createClient } from '@supabase/supabase-js';
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_KEY;
-const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
-
-
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+  const supabaseKey = import.meta.env.PUBLIC_SUPABASE_KEY;
+  const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
 
   function handleFileUpload(event) {
     file = event.target.files[0];
-    if (file) {
-      processCSVFile(file);
-    }
+    fileSelected = !!file; // Set fileSelected to true if a file is chosen
   }
 
-  async function processCSVFile(file) {
+  async function startUpload() {
+    if (!file) return;
+    isProcessing = true; // Start loading spinner
+
     const reader = new FileReader();
 
     reader.onload = async (event) => {
@@ -36,6 +34,7 @@ const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
         await processBatch(batch);
         await sleep(DELAY); // Add delay between batches
       }
+      isProcessing = false; // Stop loading spinner when done
     };
 
     reader.readAsText(file);
@@ -137,5 +136,20 @@ const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
     <div class="mt-6">
       <input type="file" accept=".csv" on:change="{handleFileUpload}" />
     </div>
+    {#if fileSelected}
+      <button 
+        class="mt-6 bg-blue-500 text-white py-2 px-4 rounded flex justify-center items-center"
+        on:click="{startUpload}"
+        disabled={isProcessing}
+      >
+        {#if isProcessing}
+          <svg class="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+          </svg>
+        {/if}
+        {isProcessing ? 'Uploading...' : 'Start Upload'}
+      </button>
+    {/if}
   </div>
 </div>

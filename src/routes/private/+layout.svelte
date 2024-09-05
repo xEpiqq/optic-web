@@ -3,7 +3,6 @@
 	let userProfile = data.userProfile
 	let teams = data.userProfile.teams
 	import { page } from '$app/stores';
-	console.log(data.userProfile.teams)
 </script>
 
 <div class="h-full bg-white">

@@ -13,8 +13,6 @@ export const load = async ({locals}) => {
     .select("id, name")
     .eq("organization_id", org)
 
-    console.log(teams)
-
     return {
       teams
     }

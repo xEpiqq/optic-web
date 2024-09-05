@@ -1,34 +1,24 @@
 <script>
     import { createEventDispatcher } from 'svelte';
     import { fade, fly } from 'svelte/transition';
-
+    export let data;
     const dispatch = createEventDispatcher();
     let emailInput;
     let selectedTeam = 'all';
     let showModal = false;
     let showTeamModal = false;
-    let newUser = { email: '', team: selectedTeam, role: 'Member' };
+    let newUser = { email: '', team: selectedTeam, role: 'user', firstName: '', lastName: '', phone: '' };
     let newTeam = { name: '' };
 
-    let teams = [
-        { name: 'Team Alpha', users: [
-            { name: 'Lindsay Walton', title: 'Front-end Developer', status: 'Active', role: 'Member', email: 'lindsay.walton@example.com', img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
-        ]},
-        { name: 'Team Beta', users: [
-            { name: 'James Smith', title: 'Backend Developer', status: 'Active', role: 'Admin', email: 'james.smith@example.com', img: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?ixlib=rb-1.2.1&auto=format&fit=facearea&w=256&h=256&q=80' },
-        ]},
-        { name: 'Team Gamma', users: [
-            { name: 'Alice Johnson', title: 'UI/UX Designer', status: 'Inactive', role: 'Member', email: 'alice.johnson@example.com', img: 'https://images.unsplash.com/photo-1502767089025-6572583495b8?ixlib=rb-1.2.1&auto=format&fit=facearea&w=256&h=256&q=80' },
-        ]}
-    ];
+    let teams = data.teams;
 
     $: filteredUsers = selectedTeam === 'all' 
         ? teams.flatMap(team => team.users)
         : teams.find(team => team.name === selectedTeam)?.users || [];
 
     $: sortedUsers = filteredUsers.sort((a, b) => {
-        if (a.role === 'Team Lead' && b.role !== 'Team Lead') return -1;
-        if (a.role !== 'Team Lead' && b.role === 'Team Lead') return 1;
+        if (a.user_type === 'super_user' && b.user_type !== 'super_user') return -1;
+        if (a.user_type !== 'super_user' && b.user_type === 'super_user') return 1;
         return 0;
     });
 
@@ -44,27 +34,40 @@
 
     function closeModal() {
         showModal = false;
-        newUser = { email: '', team: selectedTeam, role: 'Member' };
+        newUser = { email: '', team: selectedTeam, role: 'user', firstName: '', lastName: '', phone: '' };
     }
 
-    function addUser() {
+    async function addUser() {
         if (newUser.email && newUser.team) {
-            const team = teams.find(t => t.name === newUser.team);
-            if (team) {
-                const newUserObject = {
-                    name: newUser.email.split('@')[0], // Simple name generation
-                    title: 'New Team Member',
-                    status: 'Setup Email Sent',
-                    role: newUser.role,
-                    email: newUser.email,
-                    img: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
-                };
-                team.users = [...team.users, newUserObject];
-                teams = teams; // Trigger reactivity
-                closeModal();
+            newUser.organization_id = data.userProfile.org; // Add this line to include org
+            try {
+                const response = await fetch('/api/adduser', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(newUser),
+                });
+
+                if (response.ok) {
+                    const addedUser = await response.json();
+                    const team = teams.find(t => t.name === newUser.team);
+                    if (team) {
+                        team.users = [...team.users, addedUser];
+                        teams = teams; // Trigger reactivity
+                    }
+                    closeModal();
+                } else {
+                    const errorData = await response.json();
+                    console.error('Failed to add user:', errorData.error);
+                    // Handle error (e.g., show error message to user)
+                }
+            } catch (error) {
+                console.error('Error adding user:', error);
+                // Handle error (e.g., show error message to user)
+            }
             }
         }
-    }
 
     function openTeamModal() {
         showTeamModal = true;
@@ -75,15 +78,30 @@
         newTeam = { name: '' };
     }
 
-    function addTeam() {
-        if (newTeam.name) {
-            const newTeamObject = {
-                name: newTeam.name,
-                users: []
-            };
-            teams = [...teams, newTeamObject];
-            closeTeamModal();
+    async function addTeam() {
+    if (newTeam.name) {
+        try {
+            const response = await fetch('/api/addteam', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: newTeam.name }),
+            });
+
+            if (response.ok) {
+                const addedTeam = await response.json();
+                teams = [...teams, addedTeam];
+                closeTeamModal();
+            } else {
+                console.error('Failed to add team');
+                // Handle error (e.g., show error message to user)
+            }
+        } catch (error) {
+            console.error('Error adding team:', error);
+            // Handle error (e.g., show error message to user)
         }
+    }
     }
 
     function focusEmailInput(node) {
@@ -146,9 +164,9 @@
                     <thead>
                         <tr>
                             <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">Name</th>
-                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Title</th>
-                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Phone</th>
                             <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Role</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
                             <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-0">
                                 <span class="sr-only">Edit</span>
                             </th>
@@ -160,44 +178,36 @@
                                 <td class="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
                                     <div class="flex items-center">
                                         <div class="h-11 w-11 flex-shrink-0">
-                                            <img class="h-11 w-11 rounded-full" src={user.img} alt={user.name}>
+                                            <img class="h-11 w-11 rounded-full" src={user.profile_picture_url} alt={`${user.first_name} ${user.last_name}`}>
                                         </div>
                                         <div class="ml-4">
-                                            <div class="font-medium text-gray-900">{user.name}</div>
+                                            <div class="font-medium text-gray-900">{user.first_name} {user.last_name}</div>
                                             <div class="mt-1 text-gray-500">{user.email}</div>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-                                    <div class="text-gray-900">{user.title}</div>
-                                </td>
-                                <td class="whitespace-nowrap px-3 py-5 text-sm">
-                                    {#if user.status === 'Setup Email Sent'}
-                                        <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-700 ring-1 ring-inset ring-yellow-600/20">
-                                            {user.status}
-                                        </span>
-                                    {:else if user.status === 'Active'}
-                                        <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                                            {user.status}
-                                        </span>
-                                    {:else}
-                                        <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-600/20">
-                                            {user.status}
-                                        </span>
-                                    {/if}
+                                    <div class="text-gray-900">{user.phone}</div>
                                 </td>
                                 
                                 <td class="whitespace-nowrap px-3 py-5 text-sm text-gray-500">
-                                    {#if user.role === 'Team Lead'}
+                                    {#if user.user_type === 'super_user'}
                                         <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                                            {user.role}
+                                            Super User
                                         </span>
                                     {:else}
-                                        {user.role}
+                                        User
                                     {/if}
                                 </td>
+
+                                <td class="whitespace-nowrap px-3 py-5 text-sm">
+                                    <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                        Active
+                                    </span>
+                                </td>
+
                                 <td class="relative whitespace-nowrap py-5 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-                                    <a href="#" class="text-indigo-600 hover:text-indigo-900">Edit<span class="sr-only">, {user.name}</span></a>
+                                    <a href="#" class="text-indigo-600 hover:text-indigo-900">Edit<span class="sr-only">, {user.first_name} {user.last_name}</span></a>
                                 </td>
                             </tr>
                         {/each}
@@ -210,40 +220,37 @@
 
 <!-- Add User Modal -->
 {#if showModal}
-<div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true" on:keydown={handleKeydown}>
+<div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" on:click={closeModal} transition:fade={{duration: 200}}></div>
 
-        <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-56 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
+        <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
              transition:fly="{{ y: 200, duration: 300 }}">
-            <div class="absolute top-0 right-0 pt-4 pr-4">
-                <button type="button" class="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" on:click={closeModal}>
-                    <span class="sr-only">Close</span>
-                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
             <div class="sm:flex sm:items-start">
                 <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                     <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
                         Add New User
                     </h3>
-                    <div class="mt-2">
+                    <div class="mt-2 space-y-2">
+                        <input type="text" placeholder="First Name" bind:value={newUser.firstName}
+                               class="px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-indigo-500 block w-full rounded-md sm:text-sm focus:ring-1">
+                        <input type="text" placeholder="Last Name" bind:value={newUser.lastName}
+                               class="px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-indigo-500 block w-full rounded-md sm:text-sm focus:ring-1">
                         <input type="email" placeholder="Email" bind:value={newUser.email}
-                        class="mt-2 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-indigo-500 block w-full rounded-md sm:text-sm focus:ring-1"
-                        bind:this={emailInput} use:focusEmailInput>
-
+                               class="px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-indigo-500 block w-full rounded-md sm:text-sm focus:ring-1"
+                               bind:this={emailInput}>
+                        <input type="tel" placeholder="Phone" bind:value={newUser.phone}
+                               class="px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-indigo-500 block w-full rounded-md sm:text-sm focus:ring-1">
                         <select bind:value={newUser.team}
-                                class="mt-2 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-indigo-500 block w-full rounded-md sm:text-sm focus:ring-1">
+                                class="px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-indigo-500 block w-full rounded-md sm:text-sm focus:ring-1">
                             {#each teams as team}
-                                <option value={team.name}>{team.name}</option>
+                                <option value={team.id}>{team.name}</option>
                             {/each}
                         </select>
                         <select bind:value={newUser.role}
-                                class="mt-2 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-indigo-500 block w-full rounded-md sm:text-sm focus:ring-1">
-                            <option value="Member">Member</option>
-                            <option value="Team Lead">Team Lead</option>
+                                class="px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-indigo-500 block w-full rounded-md sm:text-sm focus:ring-1">
+                            <option value="user">User</option>
+                            <option value="super_user">Super User</option>
                         </select>
                     </div>
                 </div>
