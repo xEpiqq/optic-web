@@ -1,7 +1,10 @@
 <script>
 	export let data;
-	$: ({ user } = data);
+	const teams = data.teams
 </script>
 
-<h1>Private page for user: {user?.email}</h1>
-<button class="bg-red-500" on:click={() => console.log(user)}>HKH</button>
+<ul>
+	{#each teams as team (team.id)}
+		<li class="font-bold text-red-900">{team.name}</li>
+	{/each}
+</ul>

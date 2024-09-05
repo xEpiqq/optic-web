@@ -21,18 +21,31 @@ export const load = async ({ locals }) => {
         throw redirect(303, '/');
     }
 
+    // make sure user is super_user if not kick em out
     if (data.user_type !== 'super_user') {
         throw redirect(303, '/');
     }
 
-    // Extract the organization name from the data
     const orgName = data.teams.organization.name;
+
+    // get team ids and team names
+
+    const { data: teams, error: error2 } = await locals.supabase
+      .from("teams")
+      .select("id, name")
+      .eq("organization_id", 1)
+    
+    if (error2) {
+        console.error('Error fetching teams:', error2);
+        throw redirect(303, '/');
+    }
 
     return {
       userProfile: {
         ...data,
         orgName,  // Include the organization name in the returned data
-        user_id: user.id
+        user_id: user.id,
+        teams
       }
     };
 };
