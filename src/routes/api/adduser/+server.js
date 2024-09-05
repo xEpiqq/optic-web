@@ -1,13 +1,14 @@
 import { json } from '@sveltejs/kit';
 import { createClient } from '@supabase/supabase-js';
-import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SERVICE_ROLE_KEY } from '$env/static/public';
+import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+import { PRIVATE_SERVICE_ROLE_KEY } from '$env/static/private';
 
 export async function POST({ request, locals }) {
     try {
         const { email, firstName, lastName, phone, team, role, organization_id } = await request.json();
         
         // this is an admin client because i used public_service_role_key
-        const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SERVICE_ROLE_KEY, {
+        const supabase = createClient(PUBLIC_SUPABASE_URL, PRIVATE_SERVICE_ROLE_KEY, {
           auth: {
             autoRefreshToken: false,
             persistSession: false
